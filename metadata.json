@@ -1,0 +1,5 @@
+{
+  "name": "Modern REST API CRUD Manager",
+  "description": "A modern, single-page application for managing database schemas and records through REST APIs. Features advanced filtering, sorting, and a sleek, responsive UI with transparent effects.",
+  "requestFramePermissions": []
+}
