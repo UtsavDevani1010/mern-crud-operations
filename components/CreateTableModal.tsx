@@ -10,11 +10,7 @@ interface CreateTableModalProps {
 }
 
 const defaultColumns: Column[] = [
-    { name: 'id', type: 'INT', isPrimaryKey: true, isAutoIncrement: true, isNullable: false },
-    { name: 'created_at', type: 'TIMESTAMP', defaultValue: 'CURRENT_TIMESTAMP', isNullable: false },
-    { name: 'modified_at', type: 'TIMESTAMP', defaultValue: 'CURRENT_TIMESTAMP', isNullable: false }, // Logic for ON UPDATE should be in backend
-    { name: 'created_by', type: 'INT', isNullable: true }, // Foreign key to users table
-    { name: 'modified_by', type: 'INT', isNullable: true }, // Foreign key to users table
+    
 ];
 
 const DATA_TYPES: ColumnDataType[] = ['INT', 'VARCHAR', 'TEXT', 'DATE', 'TIMESTAMP', 'BOOLEAN', 'FLOAT', 'DECIMAL'];

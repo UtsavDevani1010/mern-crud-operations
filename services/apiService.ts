@@ -1,8 +1,22 @@
-
 import type { Credentials, Table, Column, RecordRow, AdvancedFilter, SortConfig, User } from '../types';
 
 // IMPORTANT: The base URL for your API.
-const API_BASE_URL = 'https://api.example.com'; 
+// Set to your local running backend URL
+const API_BASE_URL = 'https://dynamic-db-backend-utsav.onrender.com'; 
+
+// Helper function to throw errors with the message from the API response
+async function handleResponse(response: Response) {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network or server error.' }));
+        const message = errorData.message || response.statusText;
+        throw new Error(message);
+    }
+    // Return empty object if status is 204 No Content
+    if (response.status === 204) {
+        return {};
+    }
+    return response.json();
+}
 
 class ApiService {
     private currentUser: User | null = null;
@@ -22,10 +36,13 @@ class ApiService {
         return this.currentUser;
     }
 
-    private getHeaders() {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
+    private getHeaders(contentType: boolean = true) {
+        const headers: Record<string, string> = {};
+        
+        if (contentType) {
+             headers['Content-Type'] = 'application/json';
+        }
+
         if (this.currentUser?.token) {
             headers['Authorization'] = `Bearer ${this.currentUser.token}`;
         }
@@ -35,38 +52,19 @@ class ApiService {
     // --- AUTHENTICATION ---
     async login(credentials: Credentials): Promise<User> {
         console.log('Attempting login for:', credentials.username);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(credentials),
-        // });
-        // if (!response.ok) throw new Error('Invalid username or password.');
-        // const user: User = await response.json();
-        // 
-        // --- EXPECTED API RESPONSE ---
-        // {
-        //   "id": 1,
-        //   "username": "admin_user",
-        //   "role": "Admin",
-        //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        // }
-        // -----------------------------
         
-        // Mocking API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        let mockUser: User;
-        if (credentials.username === 'admin' && credentials.password === 'admin') {
-            mockUser = { id: 1, username: 'admin', role: 'Admin', token: 'fake-admin-token' };
-        } else if (credentials.username === 'user' && credentials.password === 'user') {
-            mockUser = { id: 2, username: 'user', role: 'User', token: 'fake-user-token' };
-        } else {
-            throw new Error('Invalid credentials.');
-        }
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(credentials),
+        });
 
-        this.currentUser = mockUser;
-        localStorage.setItem('currentUser', JSON.stringify(mockUser));
-        return mockUser;
+        const user: User = await handleResponse(response);
+        
+        // Save user state on successful login
+        this.currentUser = user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return user;
     }
 
     logout() {
@@ -75,166 +73,111 @@ class ApiService {
         console.log('User logged out.');
     }
 
-    // --- MOCK DATA ---
-    private MOCK_TABLES: Table[] = [
-        { name: 'users', columns: [ { name: 'id', type: 'INT', isPrimaryKey: true }, { name: 'username', type: 'VARCHAR' } ]},
-        { name: 'products', columns: [ { name: 'id', type: 'INT', isPrimaryKey: true }, { name: 'name', type: 'VARCHAR' }, { name: 'price', type: 'DECIMAL' } ]},
-    ];
-
     // --- SCHEMA MANAGEMENT (TABLES) ---
     async getTables(): Promise<Table[]> {
         console.log('Fetching tables...');
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables`, { headers: this.getHeaders() });
-        // if (!response.ok) throw new Error('Failed to fetch tables.');
-        // return response.json();
-        //
-        // --- EXPECTED API RESPONSE ---
-        // [
-        //   { 
-        //     "name": "users", 
-        //     "columns": [
-        //       { "name": "id", "type": "INT", "isPrimaryKey": true, "isAutoIncrement": true },
-        //       { "name": "username", "type": "VARCHAR" },
-        //       ...
-        //     ] 
-        //   },
-        //   ...
-        // ]
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return Promise.resolve(this.MOCK_TABLES);
+        
+        const response = await fetch(`${API_BASE_URL}/tables`, { 
+            headers: this.getHeaders(false) // No Content-Type needed for GET requests
+        });
+
+        // The response contains the metadata stored in DynamicTable model
+        return handleResponse(response) as Promise<Table[]>;
     }
 
     async createTable(tableName: string, columns: Column[]): Promise<void> {
         console.log(`Creating table ${tableName}`);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables`, {
-        //     method: 'POST',
-        //     headers: this.getHeaders(),
-        //     body: JSON.stringify({ tableName, columns }),
-        // });
-        // if (!response.ok) throw new Error('Failed to create table.');
-        // --- EXPECTED API RESPONSE ---
-        // Status 201 Created with no body, or { "message": "Table created successfully" }
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 500));
-        this.MOCK_TABLES.push({ name: tableName, columns });
-        return Promise.resolve();
+        
+        const response = await fetch(`${API_BASE_URL}/tables`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ tableName, columns }),
+        });
+        
+        // Expected Status 201 Created (no body needed)
+        await handleResponse(response);
     }
 
     async deleteTable(tableName: string): Promise<void> {
         console.log(`Deleting table ${tableName}`);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables/${tableName}`, {
-        //     method: 'DELETE',
-        //     headers: this.getHeaders(),
-        // });
-        // if (!response.ok) throw new Error('Failed to delete table.');
-        // --- EXPECTED API RESPONSE ---
-        // Status 204 No Content, or { "message": "Table deleted successfully" }
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 500));
-        this.MOCK_TABLES = this.MOCK_TABLES.filter(t => t.name !== tableName);
-        return Promise.resolve();
+        
+        const response = await fetch(`${API_BASE_URL}/tables/${tableName}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(false), // No Content-Type needed for DELETE
+        });
+
+        // Expected Status 204 No Content (no body needed)
+        await handleResponse(response);
     }
 
     // --- DATA MANAGEMENT (RECORDS) ---
     async getRecords(tableName: string, filters?: AdvancedFilter, sort?: SortConfig, page: number = 1, limit: number = 20): Promise<{ records: RecordRow[], total: number }> {
         console.log(`Fetching records for ${tableName}`);
-        // --- API CALL PLACEHOLDER ---
-        // const queryParams = new URLSearchParams({ page: String(page), limit: String(limit) });
-        // ...
-        // const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records?${queryParams}`, { ... });
-        // if (!response.ok) throw new Error('Failed to fetch records.');
-        // return response.json();
-        //
-        // --- EXPECTED API RESPONSE ---
-        // {
-        //   "records": [
-        //     { "id": 1, "username": "test", ... },
-        //     { "id": 2, "username": "test2", ... }
-        //   ],
-        //   "total": 150
-        // }
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const records = [{ id: 1, name: `Mock Record 1 for ${tableName}`}, { id: 2, name: `Mock Record 2 for ${tableName}`}];
-        return Promise.resolve({ records, total: 2 });
+        
+        // Construct query parameters
+        const queryParams = new URLSearchParams({ 
+            page: String(page), 
+            limit: String(limit) 
+        });
+
+        if (filters) {
+            // Backend expects filters and sort to be JSON strings
+            queryParams.append('filters', JSON.stringify(filters));
+        }
+        if (sort) {
+            queryParams.append('sort', JSON.stringify(sort));
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records?${queryParams.toString()}`, { 
+            headers: this.getHeaders(false)
+        });
+
+        // Response structure: { records: RecordRow[], total: number }
+        return handleResponse(response) as Promise<{ records: RecordRow[], total: number }>;
     }
 
     async createRecord(tableName: string, data: Omit<RecordRow, 'id'>): Promise<RecordRow> {
-        const recordData = { 
-            ...data, 
-            created_by: this.currentUser?.id,
-            modified_by: this.currentUser?.id
-        };
+        // NOTE: created_by and modified_by are now handled fully by the backend using req.user.id
+        const recordData = data; 
+
         console.log(`Creating record in ${tableName}`, recordData);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records`, {
-        //     method: 'POST',
-        //     headers: this.getHeaders(),
-        //     body: JSON.stringify(recordData),
-        // });
-        // if (!response.ok) throw new Error('Failed to create record.');
-        // return response.json();
-        //
-        // --- EXPECTED API RESPONSE (the newly created record) ---
-        // {
-        //   "id": 123,
-        //   "created_at": "2023-10-27T10:00:00Z",
-        //   "modified_at": "2023-10-27T10:00:00Z",
-        //   "created_by": 1,
-        //   "modified_by": 1,
-        //   ...other fields
-        // }
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const newRecord = { ...recordData, id: Math.random() };
-        return Promise.resolve(newRecord);
+        
+        const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(recordData),
+        });
+
+        // Response structure: { id, created_at, modified_at, created_by, modified_by, ...other fields }
+        return handleResponse(response) as Promise<RecordRow>;
     }
     
     async updateRecord(tableName: string, recordId: number | string, data: RecordRow): Promise<RecordRow> {
-        const recordData = { 
-            ...data,
-            modified_by: this.currentUser?.id
-        };
-        console.log(`Updating record ${recordId} in ${tableName}`, recordData);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records/${recordId}`, {
-        //     method: 'PUT',
-        //     headers: this.getHeaders(),
-        //     body: JSON.stringify(recordData),
-        // });
-        // if (!response.ok) throw new Error('Failed to update record.');
-        // return response.json();
-        //
-        // --- EXPECTED API RESPONSE (the updated record) ---
-        // {
-        //   "id": 123,
-        //   ...
-        //   "modified_at": "2023-10-27T12:30:00Z",
-        //   "modified_by": 1,
-        //   ...other fields
-        // }
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return Promise.resolve({ ...recordData, id: recordId });
+        // NOTE: modified_by is handled fully by the backend using req.user.id
+        
+        console.log(`Updating record ${recordId} in ${tableName}`, data);
+        
+        const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records/${recordId}`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            // Send the full record data, including the ID
+            body: JSON.stringify(data), 
+        });
+
+        // Response structure: { id, modified_at, modified_by, ...other fields }
+        return handleResponse(response) as Promise<RecordRow>;
     }
 
     async deleteRecord(tableName: string, recordId: number | string): Promise<void> {
         console.log(`Deleting record ${recordId} in ${tableName}`);
-        // --- API CALL PLACEHOLDER ---
-        // const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records/${recordId}`, {
-        //     method: 'DELETE',
-        //     headers: this.getHeaders(),
-        // });
-        // if (!response.ok) throw new Error('Failed to delete record.');
-        // --- EXPECTED API RESPONSE ---
-        // Status 204 No Content
-        // -----------------------------
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return Promise.resolve();
+        
+        const response = await fetch(`${API_BASE_URL}/tables/${tableName}/records/${recordId}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(false),
+        });
+
+        // Expected Status 204 No Content
+        await handleResponse(response);
     }
 }
 

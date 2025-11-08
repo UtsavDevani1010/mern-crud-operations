@@ -48,7 +48,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({ table, record, onClose
     const [error, setError] = useState<string | null>(null);
 
     const isEditing = record !== null;
-    const pkColumn = table.columns.find(c => c.isPrimaryKey)?.name || 'id';
+    const pkColumn = table.columns.find(c => c.isPrimaryKey)?.name || '_id';
 
     const handleChange = (name: string, value: any) => {
         setFormData(prev => ({ ...prev, [name]: value }));

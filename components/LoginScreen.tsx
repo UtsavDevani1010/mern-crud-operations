@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Credentials, User } from '../types';
 import { Spinner } from './Spinner';
@@ -52,7 +51,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            placeholder="admin / user"
+                            placeholder="Enter username"
                             required
                             className="w-full px-4 py-2 bg-black/20 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                         />
@@ -66,7 +65,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="admin / user"
+                            placeholder="Enter password"
                             required
                             className="w-full px-4 py-2 bg-black/20 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                         />
